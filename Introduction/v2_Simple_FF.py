@@ -28,6 +28,11 @@ class SineNet2(nn.Module):
         x = self.layer3(x)
         return x
 
+
+
+
+
+
 # Define the neural network
 class SineNet(nn.Module):
     def __init__(self):
@@ -44,7 +49,7 @@ class SineNet(nn.Module):
 
 
 # Instantiate network, loss, and optimizer
-model = SineNet()
+model = SineNet2()
 loss_function = nn.MSELoss()
 optimizer = optim.SGD(model.parameters(), lr=0.01)
 
@@ -67,6 +72,9 @@ for epoch in range(epochs):
         epoch_loss += loss.item()
 
     avg_losses.append(epoch_loss / len(radians))
+
+
+
 
 # Plot results
 plt.style.use('dark_background')
