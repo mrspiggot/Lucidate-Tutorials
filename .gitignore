@@ -2,6 +2,6 @@ venv/
 .env
 main.py
 data/
-LSTM.py
-v6_LSTM.py
+Introduction/LSTM.py
+Introduction/v6_LSTM.py
 .gitignore
