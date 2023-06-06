@@ -89,7 +89,7 @@ vocab_size = len(word2idx)  # depends on your data
 embedding_dim = 128
 hidden_dim = 256
 learning_rate = 0.001
-epochs = 10
+epochs = 2
 
 # Initialize model, loss function, and optimizer
 model = LSTMModel(vocab_size, embedding_dim, hidden_dim)
@@ -101,11 +101,35 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 # for example: input_sequences[0] might be [5, 12, 3] and target_sequences[0] might be [12, 3, 15]
 
 
+# split data into training and validation sets
+split_idx = int(len(input_sequences) * 0.8)
+train_inputs, val_inputs = input_sequences[:split_idx], input_sequences[split_idx:]
+train_targets, val_targets = target_sequences[:split_idx], target_sequences[split_idx:]
+
+
+def compute_val_loss():
+    model.eval()  # set model to evaluation mode
+    val_loss = 0
+
+    with torch.no_grad():
+        for i in range(len(val_inputs)):
+            inputs = torch.tensor(val_inputs[i]).unsqueeze(0)
+            targets = torch.tensor(val_targets[i])
+
+            outputs = model(inputs)
+            loss = criterion(outputs.view(-1, vocab_size), targets.view(-1))  # flatten outputs and targets
+            val_loss += loss.item()
+
+    return val_loss / len(val_inputs)
+
+
+min_val_loss = float('inf')
 
 for epoch in range(epochs):
-    for i in range(len(input_sequences)):
-        inputs = torch.tensor(input_sequences[i]).unsqueeze(0)  # unsqueeze to have batch dimension
-        targets = torch.tensor(target_sequences[i]).unsqueeze(0)  # add batch dimension to targets too
+    model.train()  # set model to training mode
+    for i in range(len(train_inputs)):
+        inputs = torch.tensor(train_inputs[i]).unsqueeze(0)  # unsqueeze to have batch dimension
+        targets = torch.tensor(train_targets[i]).unsqueeze(0)  # add batch dimension to targets too
 
         # forward pass
         outputs = model(inputs)
@@ -116,11 +140,17 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
 
-    print (f'Epoch {epoch+1}/{epochs}, Loss: {loss.item()}')
+    val_loss = compute_val_loss()
+    print(f'Epoch {epoch + 1}/{epochs}, Training Loss: {loss.item()}, Validation Loss: {val_loss}')
 
-
+    # save model if validation loss has decreased
+    if val_loss < min_val_loss:
+        print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(min_val_loss, val_loss))
+        torch.save(model.state_dict(), 'best_model.ckpt')
+        min_val_loss = val_loss
 
 start_seq = 'alice was beginning'
 length = 100  # length of the generated sequence
+model.load_state_dict(torch.load('best_model.ckpt'))
 print(generate_text(model, start_seq, length))
 
